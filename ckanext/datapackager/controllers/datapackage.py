@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import json
 
 import ckan.model as model
@@ -50,6 +52,7 @@ class DataPackageController(toolkit.BaseController):
                                 id=dataset['name'])
         except toolkit.ValidationError as e:
             errors = e.error_dict
+            # print errors
             error_summary = e.error_summary
             return self.new(data=params,
                             errors=errors,

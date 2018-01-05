@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import random
 import cgi
 import json
@@ -58,6 +60,11 @@ def package_create_from_datapackage(context, data_dict):
     # Create as draft by default so if there's any issue on creating the
     # resources and we're unable to purge the dataset, at least it's not shown.
     dataset_dict['state'] = 'draft'
+
+    # print "\n----------------------- dataset_dict -------------------"
+    # print str(dataset_dict)
+    # print "\n----------------------- ./ dataset_dict -------------------"
+
     res = _package_create_with_unique_name(context, dataset_dict, name)
 
     dataset_id = res['id']
@@ -85,6 +92,7 @@ def _load_and_validate_datapackage(url=None, upload=None):
     except (datapackage.exceptions.DataPackageException,
             datapackage.exceptions.SchemaError,
             datapackage.exceptions.ValidationError) as e:
+        # print str(e.errors)
         msg = {'datapackage': [e.message]}
         raise toolkit.ValidationError(msg)
 
@@ -101,7 +109,13 @@ def _package_create_with_unique_name(context, dataset_dict, name=None):
         dataset_dict['name'] = name
 
     try:
-        res = toolkit.get_action('package_create')(context, dataset_dict)
+        try:
+            existing_package = toolkit.get_action('package_show')(context, { 'id': dataset_dict['name'] })
+            res = toolkit.get_action('package_update')(context, dataset_dict)
+            # TODO: poner un logging
+        except toolkit.ObjectNotFound as e:
+            res = toolkit.get_action('package_create')(context, dataset_dict)
+            # TODO: poner un logging
     except toolkit.ValidationError as e:
         if not name and \
            'That URL is already in use.' in e.error_dict.get('name', []):

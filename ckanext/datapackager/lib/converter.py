@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 '''Functions for converting between CKAN's dataset and Data Packages.
 '''
 import json
@@ -5,7 +7,7 @@ import re
 import slugify
 
 import ckan.lib.helpers as h
-
+import ckan.plugins.toolkit as t
 
 def _convert_to_datapackage_resource(resource_dict):
     '''Convert a CKAN resource dict into a Data Package resource dict.
@@ -99,8 +101,16 @@ def datapackage_to_dataset(datapackage):
         _datapackage_parse_keywords,
         _datapackage_parse_unknown_fields_as_extras,
     ]
+
+    # TODO: si no estan las claves, que no pete
     dataset_dict = {
-        'name': datapackage.descriptor['name'].lower()
+        'name': datapackage.descriptor['name'].lower(),
+        'name': datapackage.descriptor['name'].lower(),
+        'owner_org': datapackage.descriptor['owner_org'].lower(),
+        'private': t.asbool(datapackage.descriptor['private']),
+        'autonomous_region': datapackage.descriptor['autonomous_regions'],
+        'custom_topic': datapackage.descriptor['custom_topic'],
+        'custom_subtopic': datapackage.descriptor['custom_subtopic']
     }
 
     for parser in PARSERS:
@@ -338,6 +348,16 @@ def _datapackage_parse_unknown_fields_as_extras(datapackage_dict):
         'author',
         'keywords',
     ]
+
+    CUSTOM_KNOWN_FILES = [
+        'owner_org',
+        'private',
+        'autonomous_regions',
+        'custom_topic',
+        'custom_subtopic'
+    ]
+
+    KNOWN_FIELDS += CUSTOM_KNOWN_FILES
 
     result = {}
     extras = [{'key': k, 'value': v}
