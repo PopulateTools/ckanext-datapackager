@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import json
+import logging
 
 import ckan.model as model
 import ckan.plugins.toolkit as toolkit

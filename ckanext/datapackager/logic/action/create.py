@@ -5,6 +5,7 @@ import cgi
 import json
 import tempfile
 import ckan.plugins.toolkit as toolkit
+import logging
 
 import datapackage
 import ckanext.datapackager.lib.converter as converter
