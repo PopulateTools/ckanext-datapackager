@@ -34,6 +34,8 @@ class DataPackageController(toolkit.BaseController):
         )
 
     def import_datapackage(self):
+        logging.info('[ckanext-datapackager] Received request to import a datapackage')
+
         context = {
             'model': model,
             'session': model.Session,
