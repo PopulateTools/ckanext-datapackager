@@ -93,7 +93,7 @@ def _load_and_validate_datapackage(url=None, upload=None):
     except (datapackage.exceptions.DataPackageException,
             datapackage.exceptions.SchemaError,
             datapackage.exceptions.ValidationError) as e:
-        logging.error("[ckanext-datapackager] Some validations failed for this datapackage: " + str(e.errors))
+        logging.error("[ckanext-datapackager] Some validations failed for this datapackage. Exception message: " + str(e.message) + " Exception errors: " + str(e.errors))
         msg = {'datapackage': [e.message]}
         raise toolkit.ValidationError(msg)
 
