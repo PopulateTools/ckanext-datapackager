@@ -102,16 +102,38 @@ def datapackage_to_dataset(datapackage):
         _datapackage_parse_unknown_fields_as_extras,
     ]
 
-    # TODO: si no estan las claves, que no pete
     dataset_dict = {
         'name': datapackage.descriptor['name'].lower(),
         'name': datapackage.descriptor['name'].lower(),
         'owner_org': datapackage.descriptor['owner_org'].lower(),
-        'private': t.asbool(datapackage.descriptor['private']),
-        'autonomous_region': datapackage.descriptor['autonomous_regions'],
-        'custom_topic': datapackage.descriptor['custom_topic'],
-        'custom_subtopic': datapackage.descriptor['custom_subtopic']
+        'private': t.asbool(datapackage.descriptor['private'])
     }
+
+    # assign autonomous region, if present
+
+    if datapackage.descriptor.get('autonomous_regions'):
+        autonomous_regions_ids = datapackage.descriptor['autonomous_regions']
+        autonomous_regions_names = []
+
+        for id in autonomous_regions_ids:
+            autonomous_region = t.get_action('tag_show')({}, { 'id': id, 'vocabulary_id': 'autonomous_regions' })
+            autonomous_regions_names.append(autonomous_region['name'])
+
+        dataset_dict['autonomous_region'] = autonomous_regions_names
+
+    # assign custom topic, if present
+
+    if datapackage.descriptor.get('custom_topic'):
+        custom_topic_id = datapackage.descriptor['custom_topic'][0]
+        topic = t.get_action('tag_show')({}, { 'id': custom_topic_id, 'vocabulary_id': 'custom_topics' })
+        dataset_dict['custom_topic'] = topic['name']
+
+    # assign custom subtopic, if present
+
+    if datapackage.descriptor.get('custom_subtopic'):
+        custom_subtopic_id = datapackage.descriptor['custom_subtopic'][0]
+        subtopic = t.get_action('tag_show')({},{ 'id': custom_subtopic_id, 'vocabulary_id': 'custom_subtopics' })
+        dataset_dict['custom_subtopic'] = subtopic['name']
 
     for parser in PARSERS:
         dataset_dict.update(parser(datapackage.descriptor))
