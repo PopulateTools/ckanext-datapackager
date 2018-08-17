@@ -5,6 +5,7 @@ import re
 import slugify
 
 import ckan.lib.helpers as h
+import ckan.plugins.toolkit as t
 
 
 def _convert_to_datapackage_resource(resource_dict):
@@ -100,7 +101,9 @@ def datapackage_to_dataset(datapackage):
         _datapackage_parse_unknown_fields_as_extras,
     ]
     dataset_dict = {
-        'name': datapackage.descriptor['name'].lower()
+        'name': datapackage.descriptor['name'].lower(),
+        'owner_org': datapackage.descriptor['owner_org'].lower(),
+        'private': t.asbool(datapackage.descriptor['private'])
     }
 
     for parser in PARSERS:
@@ -338,6 +341,13 @@ def _datapackage_parse_unknown_fields_as_extras(datapackage_dict):
         'author',
         'keywords',
     ]
+
+    CUSTOM_KNOWN_FILES = [
+        'owner_org',
+        'private'
+    ]
+
+    KNOWN_FIELDS += CUSTOM_KNOWN_FILES
 
     result = {}
     extras = [{'key': k, 'value': v}

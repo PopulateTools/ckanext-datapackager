@@ -101,7 +101,11 @@ def _package_create_with_unique_name(context, dataset_dict, name=None):
         dataset_dict['name'] = name
 
     try:
-        res = toolkit.get_action('package_create')(context, dataset_dict)
+        try:
+            existing_package = toolkit.get_action('package_show')(context, { 'id': dataset_dict['name'] })
+            res = toolkit.get_action('package_update')(context, dataset_dict)
+        except toolkit.ObjectNotFound as e:
+            res = toolkit.get_action('package_create')(context, dataset_dict)
     except toolkit.ValidationError as e:
         if not name and \
            'That URL is already in use.' in e.error_dict.get('name', []):
