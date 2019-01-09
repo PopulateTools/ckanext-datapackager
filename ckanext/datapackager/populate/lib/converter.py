@@ -7,11 +7,14 @@ import six
 import slugify
 import ckan.plugins.toolkit as t
 
+from ckan.common import config
 from ckan_datapackage_tools import converter as original_converter
 
-def _convert_to_datapackage_resource(resource_dict):
-    return original_converter._convert_to_datapackage_resource(dataset_dict)
+def default_locale():
+    return config.get('ckan.locale_default')
 
+def available_locales():
+    return t.aslist(config.get('ckan.locales_offered', ['es', 'eu']))
 
 def dataset_to_datapackage(dataset_dict):
     return original_converter.dataset_to_datapackage(dataset_dict)
@@ -24,14 +27,16 @@ def datapackage_to_dataset(datapackage):
     :rtype: dict
     '''
     PARSERS = [
-        _rename_dict_key('title', 'title'),
         _rename_dict_key('version', 'version'),
         _rename_dict_key('description', 'notes'),
+        _datapackage_parse_i18n_title,
+        _datapackage_parse_i18n_description,
         _datapackage_parse_license,
         _datapackage_parse_sources,
-        _datapackage_parse_author,
-        _datapackage_parse_keywords,
-        _datapackage_parse_unknown_fields_as_extras,
+        _datapackage_parse_i18n_author,
+        _datapackage_parse_i18n_maintainer,
+        _parse_i18n_tags,
+        _datapackage_parse_unknown_fields_as_extras
     ]
 
     dataset_dict = {
@@ -49,40 +54,95 @@ def datapackage_to_dataset(datapackage):
 
     return dataset_dict
 
+def _datapackage_parse_i18n_title(dataset_dict):
+    return _parse_i18n_attr('title', dataset_dict)
+
+def _datapackage_parse_i18n_description(dataset_dict):
+    return _parse_i18n_attr('description', dataset_dict)
+
+def _datapackage_parse_i18n_author(dataset_dict):
+    return _parse_i18n_attr('author', dataset_dict)
+
+def _datapackage_parse_i18n_maintainer(dataset_dict):
+    return _parse_i18n_attr('maintainer', dataset_dict)
+
+def _parse_i18n_tags(datapackage_dict):
+    tags_vocabularies_ids = {}
+    for locale in available_locales():
+        tags_vocabularies_ids[locale] = t.get_action('vocabulary_show')(data_dict={'id': 'tags_' + locale})['id']
+
+    result = { 'tags': [] }
+
+    i18n_attribute = datapackage_dict.get('tags_translated')
+    attribute = datapackage_dict.get('keywords')
+
+    if len(i18n_attribute.keys()) > 0:
+        for locale_key in i18n_attribute.keys():
+            for tag in i18n_attribute[locale_key]:
+                result['tags'].append({ 'name': unicode(tag), 'vocabulary_id': tags_vocabularies_ids[locale_key] })
+
+    return result
+
+
+def _parse_i18n_attr(attr_name, datapackage_dict):
+    result = {}
+
+    i18n_attr_name = attr_name + '_translated'
+    attribute = datapackage_dict.get(attr_name)
+    i18n_attribute = datapackage_dict.get(i18n_attr_name)
+
+    if len(i18n_attribute.keys()) > 0:
+        result[i18n_attr_name] = i18n_attribute
+    elif attribute:
+        result[i18n_attr_name] = {}
+        for locale in available_locales():
+            result[i18n_attr_name][locale] = attribute
+
+    return result
+
 
 def _datapackage_resource_to_ckan_resource(resource):
-    return original_converter._datapackage_resource_to_ckan_resource(resource)
+    resource_dict = {}
+
+    if resource.descriptor.get('name'):
+        name = resource.descriptor.get('title') or resource.descriptor['name']
+        resource_dict['name'] = name
+
+    if resource.descriptor.get('name_translated'):
+        resource_dict['name_translated'] = resource.descriptor['name_translated']
+    if resource.descriptor.get('description_translated'):
+        resource_dict['description_translated'] = resource.descriptor['description_translated']
+
+    if resource.local:
+        resource_dict['path'] = resource.source
+    elif resource.remote:
+        resource_dict['url'] = resource.source
+    elif resource.inline:
+        resource_dict['data'] = resource.source
+    else:
+        raise NotImplementedError('Multipart resources not yet supported')
+
+    if resource.descriptor.get('description'):
+        resource_dict['description'] = resource.descriptor['description']
+
+    if resource.descriptor.get('format'):
+        resource_dict['format'] = resource.descriptor['format']
+
+    if resource.descriptor.get('hash'):
+        resource_dict['hash'] = resource.descriptor['hash']
+
+    if resource.descriptor.get('schema'):
+        resource_dict['schema'] = resource.descriptor['schema']
+
+    return resource_dict
 
 
 def _rename_dict_key(original_key, destination_key):
     return original_converter._rename_dict_key(original_key, destination_key)
 
-def _parse_ckan_url(dataset_dict):
-    return original_converter._parse_ckan_url(dataset_dict)
-
-
-def _parse_notes(dataset_dict):
-    return original_converter._parse_notes(dataset_dict)
-
 
 def _parse_license(dataset_dict):
     return original_converter._parse_license(dataset_dict)
-
-
-def _parse_author_and_source(dataset_dict):
-    return original_converter._parse_author_and_source(dataset_dict)
-
-
-def _parse_maintainer(dataset_dict):
-    return original_converter._parse_maintainer(dataset_dict)
-
-
-def _parse_tags(dataset_dict):
-    return original_converter._parse_tags(dataset_dict)
-
-
-def _parse_extras(dataset_dict):
-    return original_converter._parse_extras(dataset_dict)
 
 
 def _datapackage_parse_license(datapackage_dict):
@@ -91,14 +151,6 @@ def _datapackage_parse_license(datapackage_dict):
 
 def _datapackage_parse_sources(datapackage_dict):
     return original_converter._datapackage_parse_sources(datapackage_dict)
-
-
-def _datapackage_parse_author(datapackage_dict):
-    return original_converter._datapackage_parse_author(datapackage_dict)
-
-
-def _datapackage_parse_keywords(datapackage_dict):
-    return original_converter._datapackage_parse_keywords(datapackage_dict)
 
 
 def _datapackage_parse_unknown_fields_as_extras(datapackage_dict):
@@ -111,11 +163,17 @@ def _datapackage_parse_unknown_fields_as_extras(datapackage_dict):
         'resources',
         'license',
         'title',
+        'title_translated',
         'description',
+        'description_translated',
         'homepage',
         'version',
         'sources',
         'author',
+        'author_translated',
+        'maintainer',
+        'maintainer_translated',
+        'tags_translated',
         'keywords',
         'owner_org',
         'private'
