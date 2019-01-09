@@ -6,7 +6,7 @@ import tempfile
 import six
 
 import ckan.plugins.toolkit as toolkit
-from ckan_datapackage_tools import converter
+import ckanext.datapackager.populate.lib.converter as converter
 
 import datapackage
 
@@ -86,7 +86,7 @@ def package_create_from_datapackage(context, data_dict):
 def _load_and_validate_datapackage(url=None, upload=None):
     try:
         if _upload_attribute_is_valid(upload):
-            dp = datapackage.DataPackage(upload.file)
+            dp = datapackage.DataPackage(upload.stream)
         else:
             dp = datapackage.DataPackage(url)
 
@@ -173,7 +173,7 @@ def _create_and_upload_resource(context, resource, the_file):
 
 
 def _upload_attribute_is_valid(upload):
-    return hasattr(upload, 'file') and hasattr(upload.file, 'read')
+    return hasattr(upload, 'stream') and hasattr(upload.stream, 'read')
 
 
 class _UploadLocalFileStorage(cgi.FieldStorage):

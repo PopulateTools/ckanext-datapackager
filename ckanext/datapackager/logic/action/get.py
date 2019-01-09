@@ -1,5 +1,5 @@
 import ckan.plugins.toolkit as toolkit
-from ckan_datapackage_tools import converter
+import ckanext.datapackager.populate.lib.converter as converter
 
 
 @toolkit.side_effect_free
