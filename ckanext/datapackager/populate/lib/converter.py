@@ -28,9 +28,8 @@ def datapackage_to_dataset(datapackage):
     '''
     PARSERS = [
         _rename_dict_key('version', 'version'),
-        _rename_dict_key('description', 'notes'),
         _datapackage_parse_i18n_title,
-        _datapackage_parse_i18n_description,
+        _datapackage_parse_i18n_notes,
         _datapackage_parse_license,
         _datapackage_parse_sources,
         _datapackage_parse_i18n_author,
@@ -57,8 +56,8 @@ def datapackage_to_dataset(datapackage):
 def _datapackage_parse_i18n_title(dataset_dict):
     return _parse_i18n_attr('title', dataset_dict)
 
-def _datapackage_parse_i18n_description(dataset_dict):
-    return _parse_i18n_attr('description', dataset_dict)
+def _datapackage_parse_i18n_notes(dataset_dict):
+    return _parse_i18n_attr('notes', dataset_dict)
 
 def _datapackage_parse_i18n_author(dataset_dict):
     return _parse_i18n_attr('author', dataset_dict)
@@ -164,8 +163,8 @@ def _datapackage_parse_unknown_fields_as_extras(datapackage_dict):
         'license',
         'title',
         'title_translated',
-        'description',
-        'description_translated',
+        'notes',
+        'notes_translated',
         'homepage',
         'version',
         'sources',
