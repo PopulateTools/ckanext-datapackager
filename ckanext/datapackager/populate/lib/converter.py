@@ -2,9 +2,10 @@
 '''
 import re
 import json
-
 import six
 import slugify
+import unidecode
+
 import ckan.plugins.toolkit as t
 
 from ckan.common import config
@@ -99,7 +100,11 @@ def _parse_custom_topics(topic_slugs, result):
     for key in topic_dict.keys():
         term_translations = t.get_action('term_translation_show')({},{ 'terms': [key], 'lang_codes': ['es', 'eu']})
         for term_translation in term_translations:
-            term_slug = re.sub(" ", "-", term_translation['term_translation']).lower()
+            term_slug = unidecode.unidecode(
+                unicode(
+                    re.sub(" ", "-", term_translation['term_translation']).lower()
+                )
+            )
             term_translations_dict[term_slug] = term_translation['term']
 
     for topic_slug in topic_slugs:
