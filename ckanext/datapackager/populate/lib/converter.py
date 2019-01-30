@@ -9,6 +9,7 @@ import ckan.plugins.toolkit as t
 
 from ckan.common import config
 from ckan_datapackage_tools import converter as original_converter
+from ckanext.topics.lib.topic import Topic
 
 def default_locale():
     return config.get('ckan.locale_default')
@@ -35,6 +36,7 @@ def datapackage_to_dataset(datapackage):
         _datapackage_parse_i18n_author,
         _datapackage_parse_i18n_maintainer,
         _parse_i18n_tags,
+        _datapackage_parse_i18n_update_frequency,
         _datapackage_parse_unknown_fields_as_extras
     ]
 
@@ -80,8 +82,33 @@ def _parse_i18n_tags(datapackage_dict):
             for tag in i18n_attribute[locale_key]:
                 result['tags'].append({ 'name': unicode(tag), 'vocabulary_id': tags_vocabularies_ids[locale_key] })
 
+    result = _parse_custom_topics(datapackage_dict['custom_topic'], result)
+
     return result
 
+
+def _datapackage_parse_i18n_update_frequency(dataset_dict):
+    return _parse_i18n_attr('update_frequency', dataset_dict)
+
+def _parse_custom_topics(topic_slugs, result):
+    topic_dict = {}
+    for topic in Topic.all():
+        topic_dict[topic['id']] = topic
+
+    term_translations_dict = {}
+    for key in topic_dict.keys():
+        term_translations = t.get_action('term_translation_show')({},{ 'terms': [key], 'lang_codes': ['es', 'eu']})
+        for term_translation in term_translations:
+            term_slug = re.sub(" ", "-", term_translation['term_translation']).lower()
+            term_translations_dict[term_slug] = term_translation['term']
+
+    for topic_slug in topic_slugs:
+        if topic_slug in term_translations_dict:
+            topic_tag = t.get_action('tag_show')({}, {'id': term_translations_dict[topic_slug] })
+            if not topic_tag in result['tags']:
+                result['tags'].append(topic_tag)
+
+    return result
 
 def _parse_i18n_attr(attr_name, datapackage_dict):
     result = {}
@@ -173,7 +200,9 @@ def _datapackage_parse_unknown_fields_as_extras(datapackage_dict):
         'maintainer',
         'maintainer_translated',
         'tags_translated',
+        'update_frequency_translated',
         'keywords',
+        'custom_topic',
         'owner_org',
         'private'
     ]
