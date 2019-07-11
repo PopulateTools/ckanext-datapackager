@@ -4,6 +4,7 @@ import json
 import tempfile
 
 import six
+import logging
 
 import ckan.plugins.toolkit as toolkit
 import ckanext.datapackager.populate.lib.converter as converter
@@ -94,6 +95,7 @@ def _load_and_validate_datapackage(url=None, upload=None):
     except (datapackage.exceptions.DataPackageException,
             datapackage.exceptions.SchemaError,
             datapackage.exceptions.ValidationError) as e:
+        logging.error("[ckanext-datapackager] Some validations failed for this datapackage. Exception message: " + str(e.message) + " Exception errors: " + str(e.errors))
         msg = {'datapackage': [e.message]}
         raise toolkit.ValidationError(msg)
 
@@ -113,8 +115,10 @@ def _package_create_with_unique_name(context, dataset_dict, name=None):
         try:
             toolkit.get_action('package_show')(context, { 'id': dataset_dict['name'] })
             res = toolkit.get_action('package_update')(context, dataset_dict)
+            logging.info("[ckanext-datapackager] This datapackage already exists, so it's been updated")
         except toolkit.ObjectNotFound as e:
             res = toolkit.get_action('package_create')(context, dataset_dict)
+            logging.info("[ckanext-datapackager] This datapackage does not exist, so it's been created")
     except toolkit.ValidationError as e:
         if not name and \
            'That URL is already in use.' in e.error_dict.get('name', []):
