@@ -113,8 +113,9 @@ def _package_create_with_unique_name(context, dataset_dict, name=None):
 
     try:
         try:
-            toolkit.get_action('package_show')(context, { 'id': dataset_dict['name'] })
-            res = toolkit.get_action('package_update')(context, dataset_dict)
+            # Avoid updating package info. This is managed by the UI
+            res = toolkit.get_action('package_show')(context, { 'id': dataset_dict['name'] })
+
             logging.info("[ckanext-datapackager] This datapackage already exists, so it's been updated")
         except toolkit.ObjectNotFound as e:
             res = toolkit.get_action('package_create')(context, dataset_dict)
@@ -134,6 +135,14 @@ def _package_create_with_unique_name(context, dataset_dict, name=None):
 
 
 def _create_resources(dataset_id, context, resources):
+    # Clear existing resources
+    try:
+        existing_package = toolkit.get_action('package_show')(context, { 'id': dataset_id })
+        for resource in existing_package['resources']:
+            toolkit.get_action('resource_delete')(context, { 'id': resource['id'] })
+    except toolkit.ObjectNotFound as e:
+        None
+
     for resource in resources:
         resource['package_id'] = dataset_id
         if resource.get('data'):
