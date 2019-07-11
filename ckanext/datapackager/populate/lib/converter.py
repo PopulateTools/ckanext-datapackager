@@ -78,7 +78,9 @@ def _parse_i18n_tags(datapackage_dict):
     i18n_attribute = datapackage_dict.get('tags_translated')
     attribute = datapackage_dict.get('keywords')
 
-    if len(i18n_attribute.keys()) > 0:
+    if i18n_attribute == None:
+        return result
+    elif len(i18n_attribute.keys()) > 0:
         for locale_key in i18n_attribute.keys():
             for tag in i18n_attribute[locale_key]:
                 result['tags'].append({ 'name': unicode(tag), 'vocabulary_id': tags_vocabularies_ids[locale_key] })
@@ -122,7 +124,9 @@ def _parse_i18n_attr(attr_name, datapackage_dict):
     attribute = datapackage_dict.get(attr_name)
     i18n_attribute = datapackage_dict.get(i18n_attr_name)
 
-    if len(i18n_attribute.keys()) > 0:
+    if i18n_attribute == None:
+        return result
+    elif len(i18n_attribute.keys()) > 0:
         result[i18n_attr_name] = i18n_attribute
     elif attribute:
         result[i18n_attr_name] = {}
