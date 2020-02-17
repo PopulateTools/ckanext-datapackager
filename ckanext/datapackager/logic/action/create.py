@@ -96,7 +96,7 @@ def _load_and_validate_datapackage(url=None, upload=None):
             datapackage.exceptions.SchemaError,
             datapackage.exceptions.ValidationError) as e:
         logging.error("[ckanext-datapackager] Some validations failed for this datapackage. Exception message: " + str(e.message) + " Exception errors: " + str(e.errors))
-        msg = {'datapackage': [e.message]}
+        msg = {'datapackage': [e.message], 'validation_errors': str(e.errors)}
         raise toolkit.ValidationError(msg)
 
     if not dp.safe():
